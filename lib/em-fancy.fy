@@ -42,7 +42,7 @@ class Async {
   }
 
   @evented_loop = Fiber new() {
-    EM run() { next_iteration: nil }
+    EM run() { self next_iteration }
   }
 
   def wait: object {
@@ -50,6 +50,10 @@ class Async {
       object callback: |args| { next_iteration: (Fiber yield: args) }
     }
     @evented_loop resume(<[ 'block => handle_callback, 'smart => true ]>)
+  }
+
+  def next_iteration {
+    next_iteration: nil
   }
 
   def next_iteration: options {
