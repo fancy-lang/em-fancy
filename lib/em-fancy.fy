@@ -7,10 +7,12 @@ require("lib/em-fancy/extensions/enumerable")
 Fiber = Rubinius Fiber
 
 class Async {
+  extend(self)
   read_slots: ['evented_loop]
 
   class Enumerator {
     include: FancyEnumerable
+    include: Enumerable
 
     def initialize: @collection {
       @total = @collection size
@@ -40,25 +42,33 @@ class Async {
   }
 
   @evented_loop = Fiber new() {
-    EM run() { next_iteration }
+    EM run() { next_iteration: nil }
   }
 
   def wait: object {
     handle_callback = {
       object callback: |args| { next_iteration: (Fiber yield: args) }
     }
-    @evented_loop resume: <[ 'block => handle_callback, 'smart => true ]>
+    @evented_loop resume(<[ 'block => handle_callback, 'smart => true ]>)
   }
 
   def next_iteration: options {
-    block = options && (options['block])
-
-    block && (options['smart]) if_do: {
-      block call
+    options if_do: {
+      options['block] if_do: {
+        block = options
+      }
     } else: {
-      instructions = Fiber yield(block && (block call))
-      EM next_tick() {
-        next_iteration: instructions
+      block = nil
+    }
+
+    block if_do: {
+      options['smart] if_do: {
+        block call
+      } else: {
+        instructions = Fiber yield(block && (block call))
+        EM next_tick() {
+          next_iteration: instructions
+        }
       }
     }
   }
